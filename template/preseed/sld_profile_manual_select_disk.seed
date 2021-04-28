@@ -1,0 +1,126 @@
+### Unattended Installation
+d-i auto-install/enable boolean true
+d-i debconf/priority select critical
+
+# Locales
+d-i debian-installer/locale string ru_RU.UTF-8
+
+# Keyboard
+d-i	localechooser/shortlist	select	RU
+d-i console-setup/ask_detect boolean false
+d-i console-setup/layoutcode string ru
+d-i	console-setup/variant	select	Украина
+d-i	console-setup/toggle	select	Alt+Shift
+
+# Network
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string swm-sld-lw000
+d-i netcfg/dhcp_failed note
+d-i netcfg/dhcp_options select 
+
+# Clock
+d-i clock-setup/utc boolean true
+d-i time/zone string Europe/Kiev
+d-i clock-setup/ntp boolean true
+
+### Mirror settings
+d-i mirror/country string manual
+d-i mirror/http/hostname string archive.ubuntu.com
+d-i mirror/http/directory string /ubuntu
+d-i mirror/http/proxy string
+
+# Users
+d-i passwd/root-login boolean false
+d-i passwd/root-password-crypted password !!
+
+d-i passwd/make-user boolean true
+d-i passwd/user-fullname string ladm
+d-i passwd/username string ladm
+# openssl passwd -6 -salt xyzfrgtykfd yourpass
+d-i passwd/user-password-crypted password $6$xyzfrgtykfd$5Fr//yCFbrlnSOfE2rBh4WFbq2u7Ic62foZ65sI7SJJFZYH.6HRwhNywKI7RYKNrsG1pxN4AXyjpBnnD3kfGx/
+
+d-i user-setup/allow-password-weak boolean true
+d-i user-setup/encrypt-home boolean false
+
+# Partitioning
+ubiquity partman-auto/method string crypto
+ubiquity partman-auto-lvm/guided_size string max
+ubiquity partman-lvm/device_remove_lvm boolean true
+ubiquity partman-auto/purge_lvm_from_device boolean true
+ubiquity partman-lvm/confirm boolean true
+ubiquity partman-lvm/confirm_nooverwrite boolean true
+ubiquity partman-auto-lvm/new_vg_name string main
+ubiquity partman-md/device_remove_md boolean true
+ubiquity partman-md/confirm boolean true
+ubiquity partman-partitioning/confirm_write_new_label boolean true
+ubiquity partman/choose_partition select finish
+ubiquity partman/confirm boolean true
+ubiquity partman/confirm_nooverwrite boolean true
+ubiquity partman-basicmethods/method_only boolean false
+ubiquity partman-auto/choose_recipe select atomic
+ubiquity partman-basicfilesystems/no_swap boolean false
+
+# d-i partman-auto/method string crypto
+# d-i partman-auto-lvm/guided_size string max
+# d-i partman-lvm/device_remove_lvm boolean true
+# d-i partman-auto/purge_lvm_from_device boolean true
+# d-i partman-lvm/confirm boolean true
+# d-i partman-lvm/confirm_nooverwrite boolean true
+# d-i partman-auto-lvm/new_vg_name string main
+# d-i partman-md/device_remove_md boolean true
+# d-i partman-md/confirm boolean true
+# d-i partman-partitioning/confirm_write_new_label boolean true
+# d-i partman/choose_partition select finish
+# d-i partman/confirm boolean true
+# d-i partman/confirm_nooverwrite boolean true
+# d-i partman-basicmethods/method_only boolean false
+# d-i partman-auto/choose_recipe select atomic
+# d-i partman-basicfilesystems/no_swap boolean false
+
+### GPT
+d-i partman-basicfilesystems/choose_label string gpt
+d-i partman-basicfilesystems/default_label string gpt
+d-i partman-partitioning/choose_label string gpt
+d-i partman-partitioning/default_label string gpt
+
+### EFI
+d-i partman-efi/non_efi_system boolean true
+
+# GRUB
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+
+# APT
+d-i apt-setup/restricted boolean true
+d-i apt-setup/universe boolean true
+d-i apt-setup/multiverse boolean true
+d-i apt-setup/non-free boolean true
+d-i mirror/ftp/proxy string
+d-i mirror/http/proxy string
+
+# Enable extras.ubuntu.com.
+d-i	apt-setup/extras	boolean true
+
+### Base system installation
+ubiquity ubiquity/minimal_install boolean true
+ubiquity ubiquity/use_nonfree boolean true
+d-i	pkgsel/include/install-recommends	boolean true
+
+ubiquity ubiquity/success_command \
+    string ip link set up dev enp0s3; \
+           dhclient enp0s3; \
+           apt-get update -y; \
+           cp -r /cdrom/cert /target/cert; \
+           in-target apt-get install -y openssh-server; \
+           in-target sh -c 'usermod -p "!!" root'; \
+           in-target sh -c 'mkdir -p /home/ladm/.ssh && cat /cert/swm.pub > /home/ladm/.ssh/authorized_keys'; \
+           in-target sh -c 'chown 1000:1000 /home/ladm/.ssh && chown 1000:1000 /home/ladm/.ssh/authorized_keys'; \
+           in-target sh -c 'chmod 700 /home/ladm/.ssh && chmod 600 /home/ladm/.ssh/authorized_keys'; \
+           in-target sh -c 'echo "ladm   ALL = NOPASSWD: ALL" | sudo tee -a /etc/sudoers'; \
+           in-target sh -c 'poweroff'; \
+           poweroff;
+
+d-i finish-install/reboot_in_progress note
+d-i debian-installer/exit/poweroff boolean true
+ubiquity ubiquity/reboot boolean true
+ubiquity ubiquity/poweroff boolean true
